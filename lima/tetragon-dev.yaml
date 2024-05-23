@@ -64,6 +64,15 @@ provision:
     add-apt-repository -y ppa:longsleep/golang-backports
     apt update
     apt install -y golang-go
+    echo 'export GOPATH=$HOME/go' >>~/.bashrc
+    echo 'export PATH=$PATH:$GOPATH/bin' >>~/.bashrc
+    go install github.com/google/gops@latest
+
+- mode: user
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    go get github.com/cilium/ebpf/cmd/bpf2go
 
 - mode: system
   script: |
