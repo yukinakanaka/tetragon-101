@@ -33,8 +33,29 @@ provision:
     apt-get install -y linux-tools-common linux-tools-$(uname -r) 
     apt-get install -y libelf-dev libcap-dev libpcap-dev libbfd-dev binutils-dev build-essential make 
     apt-get install -y bpfcc-tools
+    apt-get install -y bpftrace
     apt-get install -y python3-pip
+    sysctl -w kernel.bpf_stats_enabled=1
     snap install yq
+
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    apt-get install -y libbpf-dev
+    ln -sf /usr/include/$(uname -m)-linux-gnu/asm /usr/include/asm
+    
+- mode: system
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    ln -sf /usr/lib/$(uname -m)-linux-gnu/libbfd.so /usr/lib/libbfd.so
+
+    git clone --recurse-submodules https://github.com/libbpf/bpftool.git
+    cd bpftool
+    git submodule update --init
+    cd src
+    make install
 
 - mode: system
   script: |
@@ -157,6 +178,16 @@ probes:
     fi
   hint: See "/var/log/cloud-init-output.log". in the guest
 
+
+- description: "bpftool to be installed"
+  script: |
+    #!/bin/bash
+    set -eux -o pipefail
+    if ! timeout 30s bash -c "until command -v bpftool >/dev/null 2>&1; do sleep 3; done"; then
+      echo >&2 "bpftool is not installed yet"
+      exit 1
+    fi
+  hint: See "/var/log/cloud-init-output.log". in the guest
 
 hostResolver:
   # hostResolver.hosts requires lima 0.8.3 or later. Names defined here will also
