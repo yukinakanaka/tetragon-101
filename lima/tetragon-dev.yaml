@@ -136,6 +136,22 @@ provision:
       echo 'alias k=kubectl' >>~/.bashrc
       echo 'complete -o default -F __start_kubectl k' >>~/.bashrc
 
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      # install krew
+      cd "$(mktemp -d)"
+      OS="$(uname | tr '[:upper:]' '[:lower:]')"
+      ARCH="$(uname -m | sed -e 's/x86_64/amd64/' -e 's/\(arm\)\(64\)\?.*/\1\2/' -e 's/aarch64$/arm64/')"
+      KREW="krew-${OS}_${ARCH}"
+      curl -fsSLO "https://github.com/kubernetes-sigs/krew/releases/latest/download/${KREW}.tar.gz"
+      tar zxvf "${KREW}.tar.gz"
+      ./"${KREW}" install krew
+      echo 'export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$PATH"' >>~/.bashrc
+      # install plugins
+      kubectl krew install ctx
+
   - mode: system
     script: |
       #!/bin/bash
